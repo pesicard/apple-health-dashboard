@@ -1,4 +1,4 @@
-/* Apple Health Dashboard v1.0.0 — https://github.com/pesicard/apple-health-dashboard — MIT License */
+/* Apple Health Dashboard v1.1.0 — https://github.com/pesicard/apple-health-dashboard — MIT License */
 (() => {
   if (window.__hd && window.__hd.v >= 1) return;
   let P = 'sensor.my_iphone_';
@@ -74,13 +74,13 @@
     if (t) {
       if (t[0] != null && t[1] == null) {
         parts.push('You reached ' + withUnit(m, t[0]) + ' on ' + S.on + ' of ' + S.n + ' ' + per + 's.');
-        if (S.shortAvg > 0) parts.push('On average you were ' + withUnit(m, S.shortAvg) + ' short each ' + per + (m.agg === 'change' ? ' (' + withUnit(m, S.shortTot) + ' total).' : '.'));
+        if (S.shortAvg > (m.tgt && m.tgt[0] ? m.tgt[0] * 0.01 : 0)) parts.push('On average you were ' + withUnit(m, S.shortAvg) + ' short each ' + per + (m.agg === 'change' ? ' (' + withUnit(m, S.shortTot) + ' total).' : '.'));
       } else {
         const tt = tgtText(m);
         parts.push(S.on + ' of ' + S.n + ' ' + per + 's were inside the target ' + tt + '.');
         if (S.below) parts.push(S.below + ' ' + per + (S.below > 1 ? 's' : '') + ' below.');
         if (S.above) parts.push(S.above + ' ' + per + (S.above > 1 ? 's' : '') + ' above.');
-        if (m.k === 'sleep' && S.shortAvg > 0) parts.push('Short nights add up to about ' + hm(S.shortAvg * 7) + ' of missed sleep a week (' + hm(S.shortAvg) + ' a night on average).');
+        if (m.k === 'sleep' && S.shortAvg > (m.tgt && m.tgt[0] ? m.tgt[0] * 0.01 : 0)) parts.push('Short nights add up to about ' + hm(S.shortAvg * 7) + ' of missed sleep a week (' + hm(S.shortAvg) + ' a night on average).');
       }
       if (S.curStreak > 1) parts.push('Current streak: ' + S.curStreak + ' ' + per + 's on target.');
     } else {
@@ -144,12 +144,12 @@
   function statsHTML(m, S) {
     if (!S.n) return '';
     const box = (lab, val, sub, cls) => '<div class="st ' + (cls || '') + '"><span>' + lab + '</span><b>' + val + '</b><small>' + (sub || '') + '</small></div>';
-    let h = box('Average', esc(withUnit(m, S.avg)), S.delta != null ? (S.delta >= 0 ? '▲ ' : '▼ ') + Math.abs(S.delta).toFixed(0) + '% vs previous' : 'first period');
+    let h = box('Average', esc(withUnit(m, S.avg)), S.delta != null && Math.abs(S.delta) >= 0.5 ? (S.delta >= 0 ? '▲ ' : '▼ ') + Math.abs(S.delta).toFixed(0) + '% vs previous' : S.delta != null ? 'same as previous' : 'first period');
     h += box('↑ High', esc(withUnit(m, S.hi)), esc(dshort(S.hiT)));
     h += box('↓ Low', esc(withUnit(m, S.lo)), esc(dshort(S.loT)));
     if (m.tgt) {
       h += box('On target', S.on + ' of ' + S.n, m.per + 's · best streak ' + S.streak, S.on / S.n >= 0.7 ? 'good' : S.on / S.n >= 0.4 ? 'mid' : 'bad');
-      if (S.shortAvg != null && S.shortAvg > 0) h += box('Missed by', esc(withUnit(m, S.shortAvg)), 'per ' + m.per + (m.agg === 'change' || m.k === 'sleep' ? ' · ' + esc(withUnit(m, S.shortTot)) + ' total' : ''), 'bad');
+      if (S.shortAvg != null && S.shortAvg > (m.tgt && m.tgt[0] ? m.tgt[0] * 0.01 : 0)) h += box('Missed by', esc(withUnit(m, S.shortAvg)), 'per ' + m.per + (m.agg === 'change' || m.k === 'sleep' ? ' · ' + esc(withUnit(m, S.shortTot)) + ' total' : ''), 'bad');
       else if (S.overAvg != null && S.overAvg > 0) h += box('Over by', esc(withUnit(m, S.overAvg)), 'per ' + m.per + ' on average', 'bad');
       else h += box('Missed by', '0', 'right on target', 'good');
     }
@@ -259,6 +259,7 @@
       this.render(); if (this.inl && this.inl.isConnected && this.data) { this.inl.style.display = 'block'; const hh = this.inl.offsetHeight; if (hh > (parseFloat(this.inl.style.minHeight) || 0)) this.inl.style.minHeight = hh + 'px'; }
     }
     render() {
+      if (this.h && !(M[this.k] && M[this.k].id && this.h.states[M[this.k].id])) { const f = ORDER.find(k => (!this.group || this.group.includes(k)) && M[k].id && this.h.states[M[k].id]); if (f && f !== this.k) { this.k = f; this.data = null; setTimeout(() => this.load(), 0); } }
       const m = Object.assign({ k: this.k }, M[this.k]);
       const H = this.h;
       const R = this.inl && this.inl.isConnected ? this.inl.shadowRoot : this.root;
@@ -477,6 +478,7 @@ class HealthInsightsCard extends HTMLElement {
     if (!d || !d.nights) strip += '<div class="sub">Loading sleep history…</div>';
     else {
       const vals = d.nights.map(n => n.v).filter(v => v != null);
+      if (vals.length < 3) strip += '<div class="sub">Your sleep history fills in over the next few nights.</div>';
       const mx = Math.max(c.sleep_goal * 1.15, ...vals) * 1.12;
       const sMin = vals.length ? Math.min(...vals) : null, sMax = vals.length ? Math.max(...vals) : null;
       const iMin = d.nights.findIndex(n => n.v === sMin), iMax = d.nights.findIndex(n => n.v === sMax);
@@ -502,9 +504,9 @@ class HealthInsightsCard extends HTMLElement {
       const cl = b.cPeak == null ? null : (b.cPeak >= 1500 ? 'bad' : b.cPeak >= 1000 ? 'warn' : 'ok');
       bed += '<div class="bed">' +
         '<div class="tile"><span class="ic">🌡️</span><div><b>' + (b.tAvg != null ? b.tAvg.toFixed(0) + '°' : '—') + '</b>' + (tl ? '<span class="tag ' + tl + '">' + (tl === 'ok' ? 'comfy' : b.tAvg > c.ideal_high ? 'too warm' : 'cool') + '</span>' : '') +
-        '<div class="sub">avg 10 pm–8 am · ' + (b.tMin != null ? b.tMin.toFixed(0) + '–' + b.tMax.toFixed(0) + '°' : '') + ' · sleep best at ' + c.ideal_low + '–' + c.ideal_high + '°</div></div></div>' +
+        '<div class="sub">' + (b.tMin != null ? 'avg 10 pm–8 am · ' + b.tMin.toFixed(0) + '–' + b.tMax.toFixed(0) + '°' : 'no readings yet; fills in after your first night') + ' · sleep best at ' + c.ideal_low + '–' + c.ideal_high + '°</div></div></div>' +
         '<div class="tile"><span class="ic">🫧</span><div><b>' + (b.cPeak != null ? Math.round(b.cPeak).toLocaleString() + ' ppm' : '—') + '</b>' + (cl ? '<span class="tag ' + cl + '">' + (cl === 'ok' ? 'fresh' : cl === 'warn' ? 'stuffy' : 'very stuffy') + '</span>' : '') +
-        '<div class="sub">peak CO₂ overnight · ' + (b.cOver >= 1 ? Math.round(b.cOver / 60 * 10) / 10 + ' h above 1,000' : 'never above 1,000') + '</div></div></div>' +
+        '<div class="sub">peak CO₂ overnight · ' + (b.cPeak == null ? 'no readings yet; fills in after your first night' : b.cOver >= 1 ? Math.round(b.cOver / 60 * 10) / 10 + ' h above 1,000' : 'never above 1,000') + '</div></div></div>' +
         '</div>';
       const tips = [];
       if (b.tAvg != null && b.tAvg > c.ideal_high) tips.push('Set the bedroom a few degrees cooler at night');
@@ -578,7 +580,7 @@ class HealthGlowCard extends HTMLElement {
     this._render();
   }
   static spark(pts, w, h, col) {
-    if (!pts || pts.length < 2) return '<svg class="sp" viewBox="0 0 ' + w + ' ' + h + '"><line x1="0" y1="' + (h - 2) + '" x2="' + w + '" y2="' + (h - 2) + '" stroke="' + col + '" stroke-opacity=".25" stroke-width="2" stroke-dasharray="3 4" stroke-linecap="round"/></svg>';
+    if (!pts || pts.length < 2) return '<svg class="sp" viewBox="0 0 ' + w + ' ' + h + '"><line x1="0" y1="' + (h - 2) + '" x2="' + w + '" y2="' + (h - 2) + '" stroke="' + col + '" stroke-opacity=".25" stroke-width="2" stroke-dasharray="3 4" stroke-linecap="round"/><text x="' + (w / 2) + '" y="' + (h / 2 + 2) + '" text-anchor="middle" font-size="11" fill="currentColor" opacity=".55">Fills in over the next few days</text></svg>';
     const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
     const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
     const X = t => ((t - x0) / ((x1 - x0) || 1)) * (w - 4) + 2, Y = v => h - 3 - ((v - y0) / ((y1 - y0) || 1)) * (h - 6);
@@ -617,7 +619,8 @@ class HealthGlowCard extends HTMLElement {
         (frac > 0 ? '<circle cx="80" cy="80" r="' + rad + '" fill="none" stroke="url(#rg' + i + ')" stroke-width="14" stroke-linecap="round" stroke-dasharray="' + (C * frac).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 80 80)"/>' : '');
     });
     ringSvg += '<text x="80" y="86" text-anchor="middle" class="hrt">💗</text></svg>';
-    const ringLegend = rings.map(r => { const val = v(r.k); return '<div class="rl"><i style="background:linear-gradient(135deg,' + r.col2 + ',' + r.col1 + ')"></i><div><b>' + n0(val) + '</b><span> / ' + r.goal.toLocaleString() + (r.unit ? ' ' + r.unit : '') + '</span><small>' + r.label + '</small></div></div>'; }).join('');
+    const RA = { active: '<b>Burns energy</b> → healthy weight, steadier blood sugar, stronger heart', steps: '<b>Keeps you moving</b> → lower heart-disease risk, better blood pressure and mood', exercise: '<b>Gets your heart pumping</b> → cardio fitness (VO₂ max), lower blood pressure, deeper sleep' };
+    const ringLegend = rings.map(r => { const val = v(r.k); return '<div class="rl"><i style="background:linear-gradient(135deg,' + r.col2 + ',' + r.col1 + ')"></i><div><b>' + n0(val) + '</b><span> / ' + r.goal.toLocaleString() + (r.unit ? ' ' + r.unit : '') + '</span><small>' + r.label + '</small></div>' + (RA[r.k] ? '<div class="ra">' + RA[r.k] + '</div>' : '') + '</div>'; }).join('');
     // sleep
     const st = [{ k: 'deep', l: 'Deep', col: '#8E5BD6' }, { k: 'core', l: 'Core', col: '#E46FD8' }, { k: 'rem', l: 'REM', col: '#FF9CC2' }, { k: 'awake', l: 'Awake', col: '#FFD3B5' }];
     const sTot = st.reduce((a, s) => a + (v(s.k) || 0), 0) || 1;
@@ -626,7 +629,7 @@ class HealthGlowCard extends HTMLElement {
     const sleepLeg = st.map(s => '<div class="sl"><i style="background:' + s.col + '"></i>' + s.l + '<b>' + hm(v(s.k)) + '</b></div>').join('');
     const sleepPct = sleepMin == null ? 0 : Math.min(sleepMin / c.sleep_goal, 1);
     // heart tiles
-    const tile = (k, icon, label, unit, col, extra) => '<div class="tile ' + (window.__hdRingFor ? window.__hdRingFor(k, v(k)) : '') + '" data-k="' + k + '" title="' + String((window.__hdInfo && window.__hdInfo[k] && window.__hdInfo[k].what) || '').replace(/"/g, '') + '" style="--c:' + col + '"><div class="ti">' + icon + '</div>' + (window.__hdDial ? window.__hdDial(k, v(k)) : '') + '<div class="tv">' + (v(k) == null ? '—' : (Math.round(v(k) * 10) / 10)) + '<small>' + unit + '</small></div><div class="tl">' + label + '</div>' + (extra || '') + this._rb(k) + '</div>';
+    const tile = (k, icon, label, unit, col, extra) => v(k) == null ? '' : '<div class="tile ' + (window.__hdRingFor ? window.__hdRingFor(k, v(k)) : '') + '" data-k="' + k + '" title="' + String((window.__hdInfo && window.__hdInfo[k] && window.__hdInfo[k].what) || '').replace(/"/g, '') + '" style="--c:' + col + '"><div class="ti">' + icon + '</div>' + (window.__hdDial ? window.__hdDial(k, v(k)) : '') + '<div class="tv">' + (v(k) == null ? '—' : (Math.abs(v(k)) >= 20 ? Math.round(v(k)) : Math.round(v(k) * 10) / 10)) + '<small>' + unit + '</small></div><div class="tl">' + label + '</div>' + (extra || '') + this._rb(k) + '</div>';
     const summary = [sleepMin != null ? 'slept ' + hm(sleepMin) : null, v('rhr') != null ? 'resting heart ' + Math.round(v('rhr')) : null, v('steps') != null ? n0(v('steps')) + ' steps so far' : null].filter(Boolean).join(' · ');
     this.shadowRoot.innerHTML = '<style>' +
       ':host{--p1:#FF5C9A;--p2:#E46FD8;--p3:#9C7BF2}' +
@@ -638,7 +641,7 @@ class HealthGlowCard extends HTMLElement {
       '.hero h1{margin:0;font-size:26px;font-weight:600;letter-spacing:.2px;text-shadow:0 1px 10px rgba(255,255,255,.45)}.hero p{margin:6px 0 0;font-size:14px;font-weight:500;opacity:.85}' +
       '.spark{position:absolute;right:22px;top:14px;font-size:30px;opacity:.9;animation:tw 3s ease-in-out infinite}@keyframes tw{50%{transform:scale(1.15) rotate(8deg);opacity:.6}}' +
       'h2{margin:0 0 12px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}h2 span{font-size:18px}' +
-      '.rw{display:flex;align-items:center;gap:18px}.rings{width:150px;height:150px;flex:none}.hrt{font-size:22px}' +
+      '.rw{display:flex;align-items:center;gap:18px}.rw>div:last-child{flex:1;min-width:0}.rl>div:nth-child(2){flex:none;min-width:96px}.rl{flex-wrap:wrap}.ra{flex:1 1 190px;min-width:0;margin-left:14px;padding-left:14px;border-left:2px solid rgba(232,69,122,.25);font-size:13px;line-height:1.4;color:var(--secondary-text-color)}.ra b{color:var(--primary-text-color);font-weight:600}.rings{width:150px;height:150px;flex:none}.hrt{font-size:22px}' +
       '.rl{display:flex;gap:10px;align-items:center;margin:8px 0}.rl i{width:14px;height:14px;border-radius:50%;flex:none}.rl b{font-size:18px}.rl span{font-size:12px;color:var(--secondary-text-color)}.rl small{display:block;font-size:11px;color:var(--secondary-text-color);letter-spacing:.4px;text-transform:uppercase}' +
       '.big{font-size:34px;font-weight:600;background:linear-gradient(90deg,var(--p1),var(--p3));-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.1}' +
       '.goal{font-size:12px;color:var(--secondary-text-color);margin:2px 0 12px}' +
@@ -661,7 +664,7 @@ class HealthGlowCard extends HTMLElement {
       '<div class="card" data-k="vo2" style="cursor:pointer"><h2><span>🦋</span>Fitness</h2><div class="big">' + (v('vo2') == null ? '—' : v('vo2')) + '<small style="font-size:14px;-webkit-text-fill-color:var(--secondary-text-color)"> VO₂ max</small></div><div class="goal">mL/kg·min · cardio fitness</div>' +
       '<div class="trend"><div class="lab"><span>VO₂ max trend</span><span></span></div>' + HealthGlowCard.spark(H.vo2, 300, 46, '#9C7BF2') + '</div>' +
       '<div class="trend"><div class="lab"><span>HRV · ' + c.days + ' days</span><span>' + (v('hrv') == null ? '' : Math.round(v('hrv')) + ' ms') + '</span></div>' + HealthGlowCard.spark(H.hrv, 300, 46, '#E46FD8') + '</div></div>' +
-      '<div id="insslot"></div><div class="card heartc"><h2><span class="beat">❤️</span>Heart & breathing</h2>' + __LEG('today low–high', 'now', 'your normal (30 days)') + '<div class="hz"><div class="tiles">' +
+      '<div id="insslot"></div><div class="card heartc"' + (['hr', 'rhr', 'whr', 'hrv', 'spo2', 'resp'].some(k => v(k) != null) ? '' : ' style="display:none"') + '><h2><span class="beat">❤️</span>Heart & breathing</h2>' + __LEG('today low–high', 'now', 'your normal (30 days)') + '<div class="hz"><div class="tiles">' +
       tile('hr', '<span class="beat">💓</span>', 'Heart rate', 'bpm', '#FF5C9A') + tile('rhr', '🌸', 'Resting', 'bpm', '#E46FD8') + tile('whr', '🚶‍♀️', 'Walking avg', 'bpm', '#FF8DB8') +
       tile('hrv', '🎀', 'HRV', 'ms', '#9C7BF2') + tile('spo2', '🫧', 'Blood oxygen', '%', '#B79CFF') + tile('resp', '🌬️', 'Breathing', '/min', '#F5A8EE') + '</div>' +
       '</div></div>' +
@@ -680,7 +683,7 @@ window.customCards.push({ type: 'health-glow-card', name: 'Health glow card', de
 if (typeof module !== 'undefined') module.exports = HealthGlowCard;
 
 (() => {
-  const VERSION = '1.0.0';
+  const VERSION = '1.1.0';
   class AppleHealthDashboard extends HTMLElement {
     setConfig(c) {
       if (!c || !c.phone) throw new Error('Set "phone" to your iPhone\'s name in Home Assistant. Example: phone: my_iphone (for sensors like sensor.my_iphone_heart_rate).');
