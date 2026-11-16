@@ -1,4 +1,5 @@
-/* Apple Health Dashboard v1.1.0 — https://github.com/pesicard/apple-health-dashboard — MIT License */
+/* Apple Health Dashboard v1.1.1 — https://github.com/pesicard/apple-health-dashboard — MIT License */
+const __ahdNum = (v, d) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : d; };
 (() => {
   if (window.__hd && window.__hd.v >= 1) return;
   let P = 'sensor.my_iphone_';
@@ -303,7 +304,7 @@
       r.querySelectorAll('[data-j]').forEach(b => b.addEventListener('click', () => { this.k = b.dataset.j; r.querySelectorAll('[data-j]').forEach(x => x.classList.toggle('on', x === b)); this._dim(); this.load(); }));
     }
   }
-  window.__hd = new HD(); if (!customElements.get('health-detail-card')) customElements.define('health-detail-card', class extends HTMLElement { setConfig(c) { this.c = c || {}; } getCardSize() { return 9; } set hass(h) { if (!this.d) { const c = this.c || {}; this.d = new HD(); this.d.inl = this; this.d.group = c.metrics || null; this.d.flat = !!c.flat; this.d.H = c.height || 340; this.d.k = c.metric || 'sleep'; (window.__hdCards = window.__hdCards || new Set()).add(this); } const d = this.d; d.h = h; const pp = this.parentNode; if (pp && pp.querySelectorAll) pp.querySelectorAll(':scope > hui-error-card').forEach(e => e.remove()); if (!this.isConnected) return; if (!this.shadowRoot) this.attachShadow({ mode: 'open' }); if (!this._init) { this._init = true; d.data = null; d.render(); d.load(); } } connectedCallback() { (window.__hdCards = window.__hdCards || new Set()).add(this); if (!this._init) { const hh = (this.d && this.d.h) || (document.querySelector('home-assistant') || {}).hass; if (hh) setTimeout(() => { this.hass = hh; }, 0); } } disconnectedCallback() { setTimeout(() => { if (!this.isConnected && window.__hdCards) window.__hdCards.delete(this); }, 0); } }); window.customCards = window.customCards || []; window.customCards.push({ type: 'health-detail-card', name: 'Health detail card', description: 'Big trend with target, high/low and what you missed' });
+  window.__hd = new HD(); if (!customElements.get('health-detail-card')) customElements.define('health-detail-card', class extends HTMLElement { setConfig(c) { this.c = c || {}; } getCardSize() { return 9; } set hass(h) { if (!this.d) { const c = this.c || {}; this.d = new HD(); this.d.inl = this; this.d.group = c.metrics || null; this.d.flat = !!c.flat; this.d.H = __ahdNum(c.height, 340); this.d.k = c.metric || 'sleep'; (window.__hdCards = window.__hdCards || new Set()).add(this); } const d = this.d; d.h = h; const pp = this.parentNode; if (pp && pp.querySelectorAll) pp.querySelectorAll(':scope > hui-error-card').forEach(e => e.remove()); if (!this.isConnected) return; if (!this.shadowRoot) this.attachShadow({ mode: 'open' }); if (!this._init) { this._init = true; d.data = null; d.render(); d.load(); } } connectedCallback() { (window.__hdCards = window.__hdCards || new Set()).add(this); if (!this._init) { const hh = (this.d && this.d.h) || (document.querySelector('home-assistant') || {}).hass; if (hh) setTimeout(() => { this.hass = hh; }, 0); } } disconnectedCallback() { setTimeout(() => { if (!this.isConnected && window.__hdCards) window.__hdCards.delete(this); }, 0); } }); window.customCards = window.customCards || []; window.customCards.push({ type: 'health-detail-card', name: 'Health detail card', description: 'Big trend with target, high/low and what you missed' });
   window.__hdTest = { M, compute, verdict, chart, statsHTML, fmt, withUnit };
 })();
 
@@ -319,6 +320,7 @@ class HealthInsightsCard extends HTMLElement {
       sync_prefix: 'sensor.my_iphone_',
       ideal_low: 65, ideal_high: 68
     }, c || {});
+    for (const [k, d] of [['sleep_goal', 420], ['ideal_low', 65], ['ideal_high', 68]]) this._c[k] = __ahdNum(this._c[k], d);
     if (!this.shadowRoot) this.attachShadow({ mode: 'open' });
     this._render();
   }
@@ -540,6 +542,7 @@ class HealthGlowCard extends HTMLElement {
       }
     }, c || {});
     if (c && c.entities) this._c.e = Object.assign({}, this._c.e, c.entities);
+    for (const [k, d] of [['steps_goal', 7000], ['move_goal', 300], ['exercise_goal', 30], ['sleep_goal', 420], ['days', 7]]) this._c[k] = __ahdNum(this._c[k], d);
     this._t = 0;
     if (!this.shadowRoot) this.attachShadow({ mode: 'open' });
   }
@@ -683,12 +686,13 @@ window.customCards.push({ type: 'health-glow-card', name: 'Health glow card', de
 if (typeof module !== 'undefined') module.exports = HealthGlowCard;
 
 (() => {
-  const VERSION = '1.1.0';
+  const VERSION = '1.1.1';
   class AppleHealthDashboard extends HTMLElement {
     setConfig(c) {
       if (!c || !c.phone) throw new Error('Set "phone" to your iPhone\'s name in Home Assistant. Example: phone: my_iphone (for sensors like sensor.my_iphone_heart_rate).');
       const phone = String(c.phone).replace(/^sensor\./, '').replace(/_$/, '');
       this._cfg = Object.assign({ steps_goal: 7000, move_goal: 300, exercise_goal: 30, sleep_goal: 420 }, c, { prefix: 'sensor.' + phone + '_' });
+      for (const [k, d] of [['steps_goal', 7000], ['move_goal', 300], ['exercise_goal', 30], ['sleep_goal', 420]]) this._cfg[k] = __ahdNum(this._cfg[k], d);
       this._ready = false;
       if (!this.shadowRoot) this.attachShadow({ mode: 'open' });
       this.shadowRoot.innerHTML = '<style>:host{display:block}.ahd{display:grid;gap:12px}</style><div class="ahd"></div>';
