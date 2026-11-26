@@ -1,4 +1,4 @@
-/* Apple Health Dashboard v1.1.1 — https://github.com/pesicard/apple-health-dashboard — MIT License */
+/* Apple Health Dashboard v1.1.2 — https://github.com/pesicard/apple-health-dashboard — MIT License */
 const __ahdNum = (v, d) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : d; };
 (() => {
   if (window.__hd && window.__hd.v >= 1) return;
@@ -546,7 +546,7 @@ class HealthGlowCard extends HTMLElement {
     this._t = 0;
     if (!this.shadowRoot) this.attachShadow({ mode: 'open' });
   }
-  set hass(h) { const __so=!!(h&&h.states['input_boolean.steampunk_style']&&h.states['input_boolean.steampunk_style'].state==='on'); if(__so!==this.__steamOn){this.__steamOn=__so;this._sig=null;this._t=0;if(__so&&!document.getElementById('steam-font')){const l=document.createElement('link');l.id='steam-font';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap';document.head.appendChild(l);}}
+  set hass(h) { const __so=!!(h&&h.states['input_boolean.steampunk_style']&&h.states['input_boolean.steampunk_style'].state==='on'); if(__so!==this.__steamOn){this.__steamOn=__so;this._sig=null;this._t=0;}
     this._h = h; if (this._ins) this._ins.hass = h;
     const e = this._c.e;
     const sig = Object.values(e).map(id => (h.states[id] || {}).state).join('|');
@@ -686,7 +686,7 @@ window.customCards.push({ type: 'health-glow-card', name: 'Health glow card', de
 if (typeof module !== 'undefined') module.exports = HealthGlowCard;
 
 (() => {
-  const VERSION = '1.1.1';
+  const VERSION = '1.1.2';
   class AppleHealthDashboard extends HTMLElement {
     setConfig(c) {
       if (!c || !c.phone) throw new Error('Set "phone" to your iPhone\'s name in Home Assistant. Example: phone: my_iphone (for sensors like sensor.my_iphone_heart_rate).');

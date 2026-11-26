@@ -63,7 +63,7 @@ The card is designed to fill a full-width dashboard view (for example a **Panel*
 | `exercise_goal` | No | `30` | Daily exercise minutes goal. |
 | `sleep_goal` | No | `420` | Nightly sleep goal in minutes (420 = 7 hours). |
 
-**Optional style:** create a toggle helper named `input_boolean.steampunk_style` and turn it on for a brass-and-gears look.
+**Optional style:** create a toggle helper named `input_boolean.steampunk_style` and turn it on for a brass-and-gears look. Headings use the Cinzel font if it's installed on your device, otherwise Georgia. The card never loads fonts or anything else from the internet.
 
 ## Not medical advice
 
