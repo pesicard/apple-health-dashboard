@@ -1,4 +1,4 @@
-/* Apple Health Dashboard v1.1.2 — https://github.com/pesicard/apple-health-dashboard — MIT License */
+/* Apple Health Dashboard v1.2.0 — https://github.com/pesicard/apple-health-dashboard — MIT License */
 const __ahdNum = (v, d) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : d; };
 (() => {
   if (window.__hd && window.__hd.v >= 1) return;
@@ -95,7 +95,7 @@ const __ahdNum = (v, d) => { const n = Number(v); return Number.isFinite(n) && n
   }
 
   function chart(m, cur, S, W, H) {
-    const pad = { l: 52, r: 18, t: 22, b: 30 };
+    const pad = { l: 60, r: 22, t: 26, b: 30 };
     if (!cur.length) return '<svg viewBox="0 0 ' + W + ' ' + H + '"><text x="' + W / 2 + '" y="' + H / 2 + '" text-anchor="middle" fill="currentColor" opacity=".6">No data yet</text></svg>';
     const ys = [];
     cur.forEach(r => { ys.push(r.v); if (r.lo != null) ys.push(r.lo); if (r.hi != null) ys.push(r.hi); });
@@ -105,40 +105,41 @@ const __ahdNum = (v, d) => { const n = Number(v); return Number.isFinite(n) && n
     const t0 = cur[0].t, t1 = cur[cur.length - 1].t;
     const X = t => pad.l + (cur.length === 1 ? 0.5 : (t - t0) / (t1 - t0)) * (W - pad.l - pad.r);
     const Y = v => pad.t + (1 - (v - lo) / (hi - lo)) * (H - pad.t - pad.b);
-    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">';
-    // grid
-    for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4, y = Y(v); s += '<line x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + y + '" y2="' + y + '" class="grid"/><text x="' + (pad.l - 8) + '" y="' + (y + 4) + '" text-anchor="end" class="ax">' + esc(fmt(m, v)) + '</text>'; }
-    // target band
+    const u = 'c' + Math.random().toString(36).slice(2, 8), col = m.col || '#FF5C9A', base = H - pad.b, x0 = pad.l, x1 = W - pad.r;
+    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none"><defs>' +
+      '<linearGradient id="' + u + 's" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#FF8DB8"/><stop offset=".55" stop-color="' + col + '"/><stop offset="1" stop-color="#B79CFF"/></linearGradient>' +
+      '<linearGradient id="' + u + 'a" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".42"/><stop offset=".65" stop-color="' + col + '" stop-opacity=".1"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient>' +
+      '<linearGradient id="' + u + 't" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#5DCAA5" stop-opacity="0"/><stop offset=".6" stop-color="#5DCAA5" stop-opacity=".07"/><stop offset="1" stop-color="#5DCAA5" stop-opacity=".13"/></linearGradient>' +
+      '<filter id="' + u + 'g" x="-5%" y="-40%" width="110%" height="180%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+    for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4, y = Y(v); s += '<line x1="' + x0 + '" x2="' + x1 + '" y1="' + y + '" y2="' + y + '" class="grid"/><text x="' + (x0 - 10) + '" y="' + (y + 4) + '" text-anchor="end" class="ax">' + esc(fmt(m, v)) + '</text>'; }
     if (m.tgt) {
-      const a = m.tgt[1] != null ? Math.min(m.tgt[1], hi) : hi, b = m.tgt[0] != null ? Math.max(m.tgt[0], lo) : lo;
-      if (a > b) { const ya = Y(a), yb = Y(b); s += '<rect x="' + pad.l + '" y="' + ya + '" width="' + (W - pad.l - pad.r) + '" height="' + (yb - ya) + '" class="tg"/>'; }
-      if (m.tgt[0] != null && m.tgt[0] >= lo && m.tgt[0] <= hi) s += '<line x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + Y(m.tgt[0]) + '" y2="' + Y(m.tgt[0]) + '" class="tgl"/><text x="' + (pad.l + 6) + '" y="' + (Y(m.tgt[0]) - 6) + '" class="tgt">target ' + esc(tgtText(m)) + '</text>';
+      const ta = m.tgt[1] != null ? Math.min(m.tgt[1], hi) : hi, tb = m.tgt[0] != null ? Math.max(m.tgt[0], lo) : lo;
+      if (ta > tb) { const ya = Y(ta), yb = Y(tb); s += '<rect x="' + x0 + '" y="' + ya + '" width="' + (x1 - x0) + '" height="' + (yb - ya) + '" rx="10" fill="url(#' + u + 't)"/>'; }
+      if (m.tgt[0] != null && m.tgt[0] >= lo && m.tgt[0] <= hi) s += '<line x1="' + x0 + '" x2="' + x1 + '" y1="' + Y(m.tgt[0]) + '" y2="' + Y(m.tgt[0]) + '" class="tgl"/><text x="' + (x0 + 8) + '" y="' + (Y(m.tgt[0]) - 7) + '" class="tgt">target ' + esc(tgtText(m)) + '</text>';
     }
-    // daily low-high band
     const banded = cur.filter(r => r.lo != null && r.hi != null);
     if (m.band && banded.length > 1) {
       const top = banded.map(r => X(r.t).toFixed(1) + ',' + Y(r.hi).toFixed(1)).join(' ');
       const bot = banded.slice().reverse().map(r => X(r.t).toFixed(1) + ',' + Y(r.lo).toFixed(1)).join(' ');
-      s += '<polygon points="' + top + ' ' + bot + '" class="band" style="fill:' + m.col + '"/>';
+      s += '<polygon points="' + top + ' ' + bot + '" class="band" style="fill:' + col + '"/>';
     }
-    // average line
     const ay = Y(S.avg);
-    s += '<line x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + ay + '" y2="' + ay + '" class="avg" style="stroke:' + m.col + '"/><text x="' + (W - pad.r - 4) + '" y="' + (ay - 6) + '" text-anchor="end" class="avgt" style="fill:' + m.col + '">avg ' + esc(withUnit(m, S.avg)) + '</text>';
-    // line
+    s += '<line x1="' + x0 + '" x2="' + x1 + '" y1="' + ay + '" y2="' + ay + '" class="avg"/><text x="' + (x1 - 4) + '" y="' + (ay - 7) + '" text-anchor="end" class="avgt">avg ' + esc(withUnit(m, S.avg)) + '</text>';
     const pts = cur.map(r => [X(r.t), Y(r.v)]);
+    const curve = P => { if (P.length < 3) return 'M' + P.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' L'); let d = 'M' + P[0][0].toFixed(1) + ' ' + P[0][1].toFixed(1); for (let i = 0; i < P.length - 1; i++) { const p0 = P[i - 1] || P[i], p1 = P[i], p2 = P[i + 1], p3 = P[i + 2] || p2; const lo2 = Math.min(p1[1], p2[1]), hi2 = Math.max(p1[1], p2[1]); const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = Math.min(hi2, Math.max(lo2, p1[1] + (p2[1] - p0[1]) / 6)); const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = Math.min(hi2, Math.max(lo2, p2[1] - (p3[1] - p1[1]) / 6)); d += ' C' + c1x.toFixed(1) + ' ' + c1y.toFixed(1) + ' ' + c2x.toFixed(1) + ' ' + c2y.toFixed(1) + ' ' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1); } return d; };
     if (pts.length > 1) {
-      s += '<path d="M' + pts.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' L') + ' L' + pts[pts.length - 1][0].toFixed(1) + ' ' + (H - pad.b) + ' L' + pts[0][0].toFixed(1) + ' ' + (H - pad.b) + ' Z" class="area" style="fill:' + m.col + '"/>';
-      s += '<path d="M' + pts.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' L') + '" class="ln" style="stroke:' + m.col + '"/>';
+      const d = curve(pts);
+      s += '<path d="' + d + ' L' + pts[pts.length - 1][0].toFixed(1) + ' ' + base + ' L' + pts[0][0].toFixed(1) + ' ' + base + ' Z" fill="url(#' + u + 'a)"/>';
+      s += '<path d="' + d + '" class="ln" stroke="url(#' + u + 's)" filter="url(#' + u + 'g)"/>';
     }
-    // points, colored by target
     const isOn = v => !m.tgt || ((m.tgt[0] == null || v >= m.tgt[0]) && (m.tgt[1] == null || v <= m.tgt[1]));
-    if (cur.length <= 120) cur.forEach((r, i) => { s += '<circle cx="' + pts[i][0].toFixed(1) + '" cy="' + pts[i][1].toFixed(1) + '" r="' + (cur.length > 45 ? 2.5 : 4) + '" class="' + (isOn(r.v) ? 'on' : 'off') + '"><title>' + esc(dshort(r.t) + ': ' + withUnit(m, r.v) + (r.lo != null && m.band ? ' (low ' + fmt(m, r.lo) + ', high ' + fmt(m, r.hi) + ')' : '')) + '</title></circle>'; });
-    // high / low labels
-    const lab = (v, t, up) => { const x = X(t), y = Y(v); const anchor = x > W * 0.8 ? 'end' : x < W * 0.2 ? 'start' : 'middle'; return '<text x="' + x + '" y="' + (up ? y - 10 : y + 18) + '" text-anchor="' + anchor + '" class="hl">' + (up ? '↑ ' : '↓ ') + esc(withUnit(m, v)) + ' · ' + esc(new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })) + '</text>'; };
+    const small = cur.length > 45;
+    if (cur.length <= 120) cur.forEach((r, i) => { s += '<circle cx="' + pts[i][0].toFixed(1) + '" cy="' + pts[i][1].toFixed(1) + '" r="' + (small ? 2.4 : 3.6) + '" class="' + (isOn(r.v) ? 'on' : 'off') + '"><title>' + esc(dshort(r.t) + ': ' + withUnit(m, r.v) + (r.lo != null && m.band ? ' (low ' + fmt(m, r.lo) + ', high ' + fmt(m, r.hi) + ')' : '')) + '</title></circle>'; });
+    if (pts.length) { const L = pts[pts.length - 1], lr = cur[cur.length - 1]; s += '<circle cx="' + L[0].toFixed(1) + '" cy="' + L[1].toFixed(1) + '" r="10" class="halo ' + (isOn(lr.v) ? 'on' : 'off') + '"/><circle cx="' + L[0].toFixed(1) + '" cy="' + L[1].toFixed(1) + '" r="5" class="last ' + (isOn(lr.v) ? 'on' : 'off') + '"/>'; }
+    const lab = (v, t, up) => { const x = X(t), y = Y(v); const anchor = x > W * 0.8 ? 'end' : x < W * 0.2 ? 'start' : 'middle'; return '<text x="' + x + '" y="' + (up ? y - 13 : y + 21) + '" text-anchor="' + anchor + '" class="hl">' + (up ? '↑ ' : '↓ ') + esc(withUnit(m, v)) + ' · ' + esc(new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })) + '</text>'; };
     if (cur.length > 1) { s += lab(S.hi, S.hiT, true); if (S.loT !== S.hiT) s += lab(S.lo, S.loT, false); }
-    // x labels
     const n = Math.min(6, cur.length);
-    for (let i = 0; i < n; i++) { const r = cur[Math.round(i * (cur.length - 1) / Math.max(1, n - 1))]; s += '<text x="' + X(r.t) + '" y="' + (H - 8) + '" text-anchor="middle" class="ax">' + esc(new Date(r.t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })) + '</text>'; }
+    for (let i = 0; i < n; i++) { const r = cur[Math.round(i * (cur.length - 1) / Math.max(1, n - 1))]; s += '<text x="' + X(r.t) + '" y="' + (H - 8) + '" text-anchor="' + (i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle') + '" class="ax">' + esc(new Date(r.t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })) + '</text>'; }
     return s + '</svg>';
   }
 
@@ -173,10 +174,10 @@ const __ahdNum = (v, d) => { const n = Number(v); return Number.isFinite(n) && n
     '.x{all:unset;cursor:pointer;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,255,255,.08);margin-left:6px}.x:hover{background:rgba(255,255,255,.16)}' +
     '.now{display:flex;gap:22px;flex-wrap:wrap;align-items:baseline;margin:12px 0 4px}.now .big{font-size:34px;font-weight:800}.now .lbl{font-size:12px;color:#D9B3C4;text-transform:uppercase;letter-spacing:.6px;display:block}.now .pill{font-size:13px;font-weight:700;padding:4px 12px;border-radius:999px}' +
     '.good{color:#8FE3C6}.mid{color:#F6C46A}.bad{color:#FF9CC2}.pill.good{background:rgba(93,202,165,.18)}.pill.mid{background:rgba(239,159,39,.18)}.pill.bad{background:rgba(255,92,154,.18)}' +
-    '.ch{margin-top:8px;border-radius:16px;background:rgba(255,255,255,.04);padding:6px 4px 0}.ch svg{width:100%;height:var(--chh,340px);display:block}' +
-    '.grid{stroke:rgba(255,255,255,.08);stroke-dasharray:3 4}.ax{font-size:11px;fill:#C9A6B8}.tg{fill:rgba(93,202,165,.12)}.tgl{stroke:rgba(93,202,165,.9);stroke-width:1.5;stroke-dasharray:6 5}.tgt{font-size:11px;font-weight:700;fill:#8FE3C6}' +
-    '.band{opacity:.16}.avg{stroke-width:1.5;stroke-dasharray:4 5;opacity:.8}.avgt{font-size:11px;font-weight:700}.area{opacity:.13}.ln{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}' +
-    'circle.on{fill:#8FE3C6;stroke:#1d3b31;stroke-width:1}circle.off{fill:#FF9CC2;stroke:#3b1d2c;stroke-width:1}.hl{font-size:12px;font-weight:800;fill:#FBE7EF;paint-order:stroke;stroke:#2A0F24;stroke-width:4px}' +
+    '.ch{margin-top:10px;border-radius:18px;background:linear-gradient(180deg,rgba(255,141,184,.07),rgba(183,156,255,.04) 60%,rgba(255,255,255,.015));box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),inset 0 1px 0 rgba(255,255,255,.08);padding:10px 8px 2px;overflow:hidden}.ch svg{width:100%;height:var(--chh,340px);display:block}' +
+    '.grid{stroke:rgba(255,255,255,.06)}.ax{font-size:10.5px;font-weight:600;fill:#C9A6B8;opacity:.85}.tg{fill:rgba(93,202,165,.12)}.tgl{stroke:rgba(93,202,165,.75);stroke-width:1.4;stroke-dasharray:2 6;stroke-linecap:round}.tgt{font-size:11px;font-weight:700;fill:#8FE3C6}' +
+    '.band{opacity:.16}.avg{stroke:#E9C9FF;stroke-width:1.3;stroke-dasharray:2 6;stroke-linecap:round;opacity:.7}.avgt{font-size:11px;font-weight:700;fill:#E9C9FF}.ln{fill:none;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}' +
+    'circle.on{fill:#8FE3C6;stroke:var(--card-background-color,#24101f);stroke-width:2}circle.off{fill:#FF9CC2;stroke:var(--card-background-color,#24101f);stroke-width:2}circle.halo{stroke:none;opacity:.28}circle.halo.on{fill:#8FE3C6}circle.halo.off{fill:#FF9CC2}circle.last{stroke:#fff;stroke-width:2}.hl{font-size:11.5px;font-weight:800;fill:#FBE7EF;paint-order:stroke;stroke:var(--card-background-color,#2A0F24);stroke-width:5px;stroke-linejoin:round}' +
     '.leg{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:#D9B3C4;margin:8px 4px 0}.leg i{display:inline-block;width:14px;height:8px;border-radius:3px;margin-right:6px;vertical-align:middle}' +
     '.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}.st{border-radius:14px;padding:10px 12px;background:rgba(255,255,255,.05)}.st span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#D9B3C4}.st b{display:block;font-size:20px;margin-top:2px}.st small{font-size:11.5px;color:#D9B3C4}' +
     '.st.good b{color:#8FE3C6}.st.mid b{color:#F6C46A}.st.bad b{color:#FF9CC2}' +
@@ -686,7 +687,7 @@ window.customCards.push({ type: 'health-glow-card', name: 'Health glow card', de
 if (typeof module !== 'undefined') module.exports = HealthGlowCard;
 
 (() => {
-  const VERSION = '1.1.2';
+  const VERSION = '1.2.0';
   class AppleHealthDashboard extends HTMLElement {
     setConfig(c) {
       if (!c || !c.phone) throw new Error('Set "phone" to your iPhone\'s name in Home Assistant. Example: phone: my_iphone (for sensors like sensor.my_iphone_heart_rate).');

@@ -18,6 +18,10 @@ A Home Assistant dashboard card for your **Apple Health** data. It turns the Hea
 
 ![Apple Health Dashboard, dark theme](https://raw.githubusercontent.com/pesicard/apple-health-dashboard/main/images/dark.png)
 
+**New in v1.2:** a softer trend graph — a smooth pink-to-lavender curve, a faint target zone, ringed dots and a glowing marker for the latest day.
+
+![Sleep trend graph, sample data](https://raw.githubusercontent.com/pesicard/apple-health-dashboard/main/images/trend.svg)
+
 ## Requirements
 
 - Home Assistant 2024.1 or newer.
@@ -27,9 +31,14 @@ A Home Assistant dashboard card for your **Apple Health** data. It turns the Hea
 
 ## Install
 
-### HACS
+### Home Assistant 2026.11 and newer (Marketplace)
 
-1. Open **HACS** in Home Assistant and search for **Apple Health Dashboard**.
+1. Go to **Settings → Marketplace** and search for **Apple Health Dashboard**.
+2. Select **Install**, then reload your browser.
+
+### Older Home Assistant (HACS)
+
+1. Open **HACS** and search for **Apple Health Dashboard**.
 2. Download it, then reload your browser.
 
 ### Manual
